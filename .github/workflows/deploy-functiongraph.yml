@@ -1,0 +1,25 @@
+name: Deploy-functiongraph-sample1
+
+on:
+  push:
+    branches: 
+    - 'master'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check Out 
+      uses: actions/checkout@v2
+
+    - name: deploy single function file to huaweicloud functiongraph
+      uses: huaweicloud/deploy-functiongraph-action@v1.0.4
+
+      with:
+        ak: ${{ secrets.ACCESSKEY }}
+        sk: ${{ secrets.SECRETACCESSKEY }}
+        endpoint: https://functiongraph.cn-north-4.myhuaweicloud.com
+        project_id: ${{ secrets.PROJECT_ID }}
+        function_codetype: dir
+        function_urn: ${function_urn}
+        function_file: ./sfc/
