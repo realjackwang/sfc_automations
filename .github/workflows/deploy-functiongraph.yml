@@ -3,7 +3,9 @@ name: Deploy-Functiongraph
 on:
   push:
     branches: 
-    - 'master'
+    - 'main'
+  workflow_dispatch:  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,8 +13,11 @@ jobs:
     steps:
     - name: Check Out 
       uses: actions/checkout@v2
+     
+    - name: compress function files or director to zip file
+      run: zip -r -j sfc.zip ./sfc/
 
-    - name: deploy single function file to huaweicloud functiongraph
+    - name: deploy compress zip function file to huaweicloud functiongraph
       uses: huaweicloud/deploy-functiongraph-action@v1.0.4
 
       with:
@@ -20,6 +25,6 @@ jobs:
         sk: ${{ secrets.SECRETACCESSKEY }}
         endpoint: https://functiongraph.cn-north-4.myhuaweicloud.com
         project_id: ${{ secrets.PROJECT_ID }}
-        function_codetype: dir
-        function_urn: ${function_urn}
-        function_file: ./sfc/
+        function_codetype: zip
+        function_urn: urn:fss:cn-north-4:${{ secrets.PROJECT_ID }}:function:default:${{ secrets.FUNCTIONNAME }}:latest
+        function_file: ./sfc.zip
