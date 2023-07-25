@@ -1,6 +1,5 @@
-import requests
-import json
 import os
+import requests
 import sign_smzdm
 import sign_52pojie
 import sign_aliyundrive
@@ -8,16 +7,19 @@ import sign_aliyundrive
 xz_token = os.environ.get('xz_token')
 
 func_list = {
-    'sign_smzdm':sign_smzdm,
-    'sign_52pojie':sign_52pojie,
-    'sign_aliyundrive':sign_aliyundrive
-    }
+    'sign_smzdm': sign_smzdm,
+    'sign_52pojie': sign_52pojie,
+    'sign_aliyundrive': sign_aliyundrive
+}
+
 
 def xz_push(title, content):
     requests.get('https://xizhi.qqoq.net/%s.channel?title=%s&content=%s' % (xz_token, title, content))
 
+
 def notion_push():
     pass
+
 
 def sfc(fun_name):
     try:
@@ -32,12 +34,13 @@ def sfc(fun_name):
     except:
         xz_push('%s 错误' % fun_name, '抛出异常，请及时查看日志')
 
+
 def handler(event, context):
     if event['user_event'] in func_list.keys():
         sfc(event['user_event'])
     else:
         print('未找到该云函数')
 
+
 if __name__ == '__main__':
-  start()
- 
+    sfc('sign_smzdm')
