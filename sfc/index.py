@@ -3,13 +3,15 @@ import requests
 import sign_smzdm
 import sign_52pojie
 import sign_aliyundrive
+import sign_natpierce
 
 xz_token = os.environ.get('xz_token')
 
 func_list = {
     'sign_smzdm': sign_smzdm,
     'sign_52pojie': sign_52pojie,
-    'sign_aliyundrive': sign_aliyundrive
+    'sign_aliyundrive': sign_aliyundrive,
+    'sign_natpierce': sign_natpierce
 }
 
 
@@ -30,7 +32,7 @@ def sfc(fun_name):
         notion_push()
 
         if not success:
-            xz_push(title, '执行失败')
+            xz_push('%s 失败' % title, '函数运行失败，请查看日志')
     except:
         xz_push('%s 错误' % fun_name, '抛出异常，请及时查看日志')
 

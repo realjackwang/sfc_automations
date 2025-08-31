@@ -11,25 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check Out
-        uses: actions/checkout@v2
-
-      - name: compress function files to zip file
-        run: zip -r -j sfc.zip ./sfc/
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       - name: deploy compress zip function file to huaweicloud functiongraph
         uses: Buronn/huaweicloud-functiongraph-action@v0.1.0
-
         with:
           access_key_id: ${{ secrets.ACCESSKEY }}
           secret_access_key: ${{ secrets.SECRETACCESSKEY }}
-          
           region: 'cn-north-4'
           func_name: ${{ secrets.FUNCTIONNAME }}
           runtime: 'Python3.6'
           timeout: 60
           memory_size: 128
-          
           code_type: 'zip'
           code_path: 'sfc'
           #code_filename: 'sfc.zip'

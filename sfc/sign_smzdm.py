@@ -10,7 +10,6 @@ token = os.environ.get('smzdm_token')
 cookie = os.environ.get('smzdm_cookie')
 key = 'apr1$AwP!wRRT$gJ/q.X24poeBInlUJC'
 
-
 # 状态地址
 current_url = 'https://zhiyou.smzdm.com/user/info/jsonp_get_current'
 # 签到地址
@@ -23,6 +22,7 @@ user_tuple = (
         'cookie': cookie,
     },
 )
+
 
 def md5(m: str):
     return hashlib.md5(m.encode()).hexdigest()
@@ -48,7 +48,7 @@ def sign(url):
         'v': '10.4.20',
         'sk': sk,
         'sign': md5(
-            f'f=android&sk={sk}&time={timestamp*1000}&token={token}&v=10.4.20&weixin=1&key={key}'
+            f'f=android&sk={sk}&time={timestamp * 1000}&token={token}&v=10.4.20&weixin=1&key={key}'
         ).upper(),
         'touchstone_event': '',
         'time': timestamp * 1000,
@@ -76,5 +76,4 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
- 
+    main()
