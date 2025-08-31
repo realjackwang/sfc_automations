@@ -31,5 +31,6 @@ jobs:
           memory_size: 128
           
           code_type: 'zip'
-          code_filename: 'sfc.zip'
+          code_path: 'sfc'
+          #code_filename: 'sfc.zip'
           handler: 'index.handler'
