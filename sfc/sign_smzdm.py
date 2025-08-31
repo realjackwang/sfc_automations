@@ -2,35 +2,30 @@ import hashlib
 import random
 import time
 import requests
-import os
 import json
-
-sk = os.environ.get('smzdm_sk')
-token = os.environ.get('smzdm_token')
-cookie = os.environ.get('smzdm_cookie')
-key = 'apr1$AwP!wRRT$gJ/q.X24poeBInlUJC'
+import os
 
 # 状态地址
 current_url = 'https://zhiyou.smzdm.com/user/info/jsonp_get_current'
 # 签到地址
 checkin_url = 'https://user-api.smzdm.com/checkin'
 
-user_tuple = (
-    {
-        'sk': sk,
-        'token': token,
-        'cookie': cookie,
-    },
-)
-
 
 def md5(m: str):
+    """计算 MD5 值"""
     return hashlib.md5(m.encode()).hexdigest()
 
 
-def sign(url):
-    global code
-    url = url
+def sign_request(url, config):
+    """发送签到请求并返回响应数据"""
+    sk = config.get('sk')
+    token = config.get('token')
+    cookie = config.get('cookie')
+    key = config.get('key')
+    
+    if not (sk and token and cookie):
+        return {'error_msg': '配置信息不完整', 'success': False}
+
     timestamp = int(time.time())
     headers = {
         'user-agent': 'smzdm_android_V10.4.20 rv:860 (Redmi Note 3;Android10;zh)smzdmapp',
@@ -54,26 +49,49 @@ def sign(url):
         'time': timestamp * 1000,
         'token': token,
     }
-    res = requests.post(url, headers=headers, data=data)
-    if res.status_code == 200:
-        data = json.loads(res.text)
-        return data
-    else:
+    try:
+        res = requests.post(url, headers=headers, data=data)
+        res.raise_for_status()
+        return json.loads(res.text)
+    except requests.exceptions.RequestException as e:
+        print(f"请求失败: {e}")
         return None
 
 
-def main():
+def main(config):
+    """
+    主函数，执行签到并返回结果
+    """
     title = '什么值得买签到'
-    success = False
-
-    data = sign(checkin_url)
+    
+    data = sign_request(checkin_url, config)
+    
     if data:
-        if data['error_msg']:
-            success = True
+        if data.get('error_code') == 0:
+            # 签到成功
+            message = data.get('data', {}).get('checkin_reward', '')
+            return {
+                'title': title,
+                'success': True,
+                'message': f"签到成功，获得：{message}"
+            }
         else:
-            success = True
-    return [title, success]
-
+            # 签到失败
+            return {
+                'title': title,
+                'success': False,
+                'message': data.get('error_msg', '未知错误')
+            }
+    else:
+        # 请求失败
+        return {
+            'title': title,
+            'success': False,
+            'message': '请求失败，请检查网络或配置'
+        }
 
 if __name__ == '__main__':
-    main()
+    # 仅用于本地测试，从环境变量获取配置
+    from config import SMZDM_CONFIG
+    result = main(SMZDM_CONFIG)
+    print(f"脚本运行结果: {result}")

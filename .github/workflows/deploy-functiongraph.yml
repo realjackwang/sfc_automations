@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FG_OTHER_VAR: "example-value"
 
     steps:
       - name: Checkout Repository
