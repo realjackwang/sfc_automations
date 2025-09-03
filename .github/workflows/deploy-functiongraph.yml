@@ -10,7 +10,9 @@ jobs:
   update-code:
     runs-on: ubuntu-latest
     env:
-      REGION: ${{ secrets.HUAWEI_REGION }}
+      REGION: ${{ secrets.REGION }}
+      # Optional: you can set HUAWEI_PROJECT_ID secret to skip automatic lookup.
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,27 +22,35 @@ jobs:
         with:
           access_key_id: ${{ secrets.ACCESSKEY }}
           secret_access_key: ${{ secrets.SECRETACCESSKEY }}
-          region: ${{ secrets.HUAWEI_REGION }}
+          region: ${{ secrets.REGION }}
 
       - name: Install huaweicloud CLI (KooCLI)
         uses: huaweicloud/huaweicloud-cli-action@v1.0.0
 
-      - name: Resolve Project ID
+      - name: Resolve Project ID (use secret if provided, otherwise auto-resolve)
         id: set_project_id
         shell: bash
         run: |
           set -euo pipefail
-          # use REGION from env
+          if [ -n "${PROJECT_ID:-}" ]; then
+            echo "Using provided PROJECT_ID from secret."
+            echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+            exit 0
+          fi
+
           if [ -z "${REGION:-}" ]; then
             echo "REGION is not set. Make sure secret HUAWEI_REGION exists."
             exit 1
           fi
-          PROJECT_ID=$(hcloud IAM KeystoneListProjects | jq -r --arg region "$REGION" '.projects[] | select(.name == $region) | .id')
-          if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
-            echo "Failed to resolve PROJECT_ID for region $REGION"
+
+          echo "No PROJECT_ID secret provided — attempting to resolve via KeystoneListProjects for region: $REGION"
+          RESOLVED=$(hcloud IAM KeystoneListProjects | jq -r --arg region "$REGION" '.projects[] | select(.name == $region) | .id' || true)
+          if [ -z "$RESOLVED" ] || [ "$RESOLVED" = "null" ]; then
+            echo "Failed to resolve PROJECT_ID for region $REGION. You can set secret HUAWEI_PROJECT_ID to skip lookup."
             exit 1
           fi
-          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "PROJECT_ID=$RESOLVED" >> $GITHUB_ENV
+          echo "Resolved PROJECT_ID=$RESOLVED"
 
       - name: Zip function code
         id: zip_code
@@ -98,5 +108,5 @@ jobs:
         shell: bash
         run: |
           echo "Function named '${{ secrets.FUNCTIONNAME }}' not found in project $PROJECT_ID (region ${REGION})."
-          echo "This simple workflow only updates code. Create the function first (or adapt the workflow to create it)."
+          echo "This simple workflow only updates code. Create the function first (or set secret HUAWEI_PROJECT_ID to point to the correct project)."
           exit 1
