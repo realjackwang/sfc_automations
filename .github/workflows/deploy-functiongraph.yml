@@ -2,31 +2,101 @@ name: Deploy-Functiongraph
 
 on:
   push:
-    branches: 
-    - 'main'
-  workflow_dispatch:  
+    branches:
+      - 'main'
+  workflow_dispatch:
 
 jobs:
-  build:
+  update-code:
     runs-on: ubuntu-latest
     env:
-      FG_OTHER_VAR: "example-value"
-
+      REGION: ${{ secrets.HUAWEI_REGION }}
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: deploy compress zip function file to huaweicloud functiongraph
-        uses: Buronn/huaweicloud-functiongraph-action@v0.1.0
+      - name: Authenticate to Huawei Cloud
+        uses: huaweicloud/auth-action@v1.1.0
         with:
           access_key_id: ${{ secrets.ACCESSKEY }}
           secret_access_key: ${{ secrets.SECRETACCESSKEY }}
-          region: 'cn-north-4'
-          func_name: ${{ secrets.FUNCTIONNAME }}
-          runtime: 'Python3.6'
-          timeout: 60
-          memory_size: 128
-          code_type: 'zip'
-          code_path: 'sfc'
-          #code_filename: 'sfc.zip'
-          handler: 'index.handler'
+          region: ${{ secrets.HUAWEI_REGION }}
+
+      - name: Install huaweicloud CLI (KooCLI)
+        uses: huaweicloud/huaweicloud-cli-action@v1.0.0
+
+      - name: Resolve Project ID
+        id: set_project_id
+        shell: bash
+        run: |
+          set -euo pipefail
+          # use REGION from env
+          if [ -z "${REGION:-}" ]; then
+            echo "REGION is not set. Make sure secret HUAWEI_REGION exists."
+            exit 1
+          fi
+          PROJECT_ID=$(hcloud IAM KeystoneListProjects | jq -r --arg region "$REGION" '.projects[] | select(.name == $region) | .id')
+          if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
+            echo "Failed to resolve PROJECT_ID for region $REGION"
+            exit 1
+          fi
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+
+      - name: Zip function code
+        id: zip_code
+        shell: bash
+        run: |
+          set -euo pipefail
+          CODE_DIR="sfc"
+          if [ ! -d "$CODE_DIR" ]; then
+            echo "Code directory '$CODE_DIR' not found."
+            exit 1
+          fi
+          cd "$CODE_DIR"
+          zip -r ../function_code.zip . >/dev/null
+          cd ..
+          CODE_BASE64=$(base64 -w 0 function_code.zip)
+          echo "$CODE_BASE64" > code_base64.txt
+          echo "code-file=function_code.zip" >> $GITHUB_OUTPUT
+
+      - name: Check function exists
+        id: check_fn
+        shell: bash
+        run: |
+          set -euo pipefail
+          FUNCTION_NAME="${{ secrets.FUNCTIONNAME }}"
+          if [ -z "$FUNCTION_NAME" ]; then
+            echo "Missing secret: FUNCTIONNAME"
+            exit 1
+          fi
+          function_exists=$(hcloud FunctionGraph ListFunctions --cli-region=${REGION} --project_id=$PROJECT_ID 2>/dev/null | jq -r --arg FN "$FUNCTION_NAME" '.functions[]? | select(.func_name == $FN) | .func_name')
+          if [ "$function_exists" == "$FUNCTION_NAME" ]; then
+            echo "FOUND=true" >> $GITHUB_ENV
+          else
+            echo "FOUND=false" >> $GITHUB_ENV
+          fi
+
+      - name: Update function code (zip)
+        if: env.FOUND == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          FUNCTION_NAME="${{ secrets.FUNCTIONNAME }}"
+          PACKAGE='default'
+          FUNCTION_URN="urn:fss:${REGION}:$PROJECT_ID:function:${PACKAGE}:${FUNCTION_NAME}:latest"
+          CODE_BASE64=$(cat code_base64.txt)
+          hcloud FunctionGraph UpdateFunctionCode \
+            --cli-region=${REGION} \
+            --code_type=zip \
+            --code_filename=function_code.zip \
+            --func_code.file="${CODE_BASE64}" \
+            --function_urn="${FUNCTION_URN}"
+          echo "Function code updated for ${FUNCTION_NAME}."
+
+      - name: Fail if function not found
+        if: env.FOUND == 'false'
+        shell: bash
+        run: |
+          echo "Function named '${{ secrets.FUNCTIONNAME }}' not found in project $PROJECT_ID (region ${REGION})."
+          echo "This simple workflow only updates code. Create the function first (or adapt the workflow to create it)."
+          exit 1
