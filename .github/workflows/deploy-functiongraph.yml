@@ -10,7 +10,39 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      FG_OTHER_VAR: "example-value"
+      # 推送通知配置
+      PUSH_METHOD: ${{ secrets.PUSH_METHOD }}
+      PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
+      VERCEL_API_URL: ${{ secrets.VERCEL_API_URL }}
+      
+      # 什么值得买签到配置
+      smzdm_sk: ${{ secrets.SMZDM_SK }}
+      smzdm_token: ${{ secrets.SMZDM_TOKEN }}
+      smzdm_cookie: ${{ secrets.SMZDM_COOKIE }}
+      
+      # 52破解签到配置
+      pojie_cookie: ${{ secrets.POJIE_COOKIE }}
+      
+      # 阿里云盘签到配置
+      aliyundrive_refresh_token: ${{ secrets.ALIYUNDRIVE_REFRESH_TOKEN }}
+      
+      # NatPierce签到配置
+      natpierce_username: ${{ secrets.NATPIERCE_USERNAME }}
+      natpierce_password: ${{ secrets.NATPIERCE_PASSWORD }}
+      
+      # V2EX签到配置
+      V2EX_COOKIES: ${{ secrets.V2EX_COOKIES }}
+      
+      # LeanCloud配置
+      lc_app_id: ${{ secrets.LC_APP_ID }}
+      lc_app_key: ${{ secrets.LC_APP_KEY }}
+      
+      # 华为云API配置
+      ak: ${{ secrets.HW_ACCESS_KEY }}
+      sk: ${{ secrets.HW_SECRET_KEY }}
 
     steps:
       - name: Checkout Repository

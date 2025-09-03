@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # 加载 .env 文件中的环境变量
 load_dotenv()
 
-from config import PUSH_METHOD, VERCEL_API_URL, SMZDM_CONFIG, POJIE52_CONFIG, ALIYUNDRIVE_CONFIG, NATPIERCE_CONFIG, V2EX_CONFIG, HIFIKI_CONFIG, HIFITI_CONFIG
+from config import PUSH_METHOD, VERCEL_API_URL, SMZDM_CONFIG, POJIE52_CONFIG, ALIYUNDRIVE_CONFIG, NATPIERCE_CONFIG, V2EX_CONFIG
 
 
 # 统一的推送模块
@@ -44,8 +44,6 @@ func_list = {
     'sign_aliyundrive': ALIYUNDRIVE_CONFIG,
     'sign_natpierce': NATPIERCE_CONFIG,
     'sign_v2ex': V2EX_CONFIG,
-    'sign_hifiki': HIFIKI_CONFIG,
-    'sign_hifiti': HIFITI_CONFIG,
 }
 
 
