@@ -1,5 +1,5 @@
 import os
-import leancloud
+#import leancloud
 import requests
 import json
 
@@ -8,7 +8,7 @@ from huaweicloudsdkfunctiongraph.v2.region.functiongraph_region import FunctionG
 from huaweicloudsdkcore.exceptions import exceptions
 from huaweicloudsdkfunctiongraph.v2 import *
 
-
+"""
 class LC():
     def __init__(self, save_id):
         leancloud.init(os.environ.get('lc_app_id'), os.environ.get('lc_app_key'))
@@ -22,7 +22,7 @@ class LC():
     def save_saves(self, save_str):
         self.saves.set('save_str', save_str)
         self.saves.save()
-
+"""
 
 class HW():
     def __init__(self):

@@ -2,13 +2,9 @@ import os
 import requests
 import json
 
-# 定义 URL 和登录信息
+# 定义 URL
 login_url = "https://www.natpierce.cn/pc/login/login.html"
 sign_url = "https://www.natpierce.cn/pc/sign/qiandao.html"
-
-# 获取多个账号和密码
-usernames = json.loads(os.environ.get('natpierce_username', '[]'))
-passwords = json.loads(os.environ.get('natpierce_password', '[]'))
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0",
@@ -21,6 +17,7 @@ headers = {
 
 
 def login_and_sign(username, password):
+    """登录并签到"""
     session = requests.Session()
     try:
         login_data = {"username": username, "password": password}
@@ -34,32 +31,50 @@ def login_and_sign(username, password):
 
             if sign_response.status_code == 200:
                 print(f"用户 {username} 签到成功！")
-                return [f"{username} 签到", True]
+                return True, f"用户 {username} 签到成功！"
             else:
                 print(f"用户 {username} 签到失败！")
-                return [f"{username} 签到", False]
+                return False, f"用户 {username} 签到失败！"
         else:
             print(f"用户 {username} 登录失败！")
-            return [f"{username} 登录失败", False]
+            return False, f"用户 {username} 登录失败！"
 
     except requests.exceptions.RequestException as e:
         print(f"用户 {username} 发生错误：{e}")
-        return [f"{username} 签到错误", False]
+        return False, f"用户 {username} 发生错误：{e}"
     finally:
         session.close()
 
 
-def main():
-    results = []
-    if len(usernames) == len(passwords):
-        for username, password in zip(usernames, passwords):
-            result = login_and_sign(username, password)
-            results.append(result)
-    else:
-        print("账号和密码数量不匹配，请检查环境变量！")
-
-    return results
+def main(config):
+    """
+    主函数，执行签到并返回结果
+    """
+    title = 'NatPierce 签到'
+    
+    username = config.get('username')
+    password = config.get('password')
+    
+    if not username or not password:
+        return {
+            'title': title,
+            'success': False,
+            'message': '用户名或密码未设置'
+        }
+    
+    success, message = login_and_sign(username, password)
+    
+    return {
+        'title': title,
+        'success': success,
+        'message': message
+    }
 
 
 if __name__ == '__main__':
-    main()
+    from config import NATPIERCE_CONFIG
+    if NATPIERCE_CONFIG:
+        result = main(NATPIERCE_CONFIG[0])
+        print(f"脚本运行结果: {result}")
+    else:
+        print("No configuration found.")

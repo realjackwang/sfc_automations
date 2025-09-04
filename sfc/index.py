@@ -1,13 +1,8 @@
 import os
 import requests
 import importlib
-from dotenv import load_dotenv
 
-# 加载 .env 文件中的环境变量
-load_dotenv()
-
-from config import PUSH_METHOD, VERCEL_API_URL, SMZDM_CONFIG, POJIE52_CONFIG, ALIYUNDRIVE_CONFIG, NATPIERCE_CONFIG, V2EX_CONFIG, HIFIKI_CONFIG, HIFITI_CONFIG
-
+from config import PUSH_METHOD, VERCEL_API_URL, SMZDM_CONFIG, POJIE52_CONFIG, ALIYUNDRIVE_CONFIG, NATPIERCE_CONFIG, V2EX_CONFIG, HIFINI_CONFIG, HIFITI_CONFIG
 
 # 统一的推送模块
 def push_notification(content, method, task_name, status, source="华为云"):
@@ -44,8 +39,7 @@ func_list = {
     'sign_aliyundrive': ALIYUNDRIVE_CONFIG,
     'sign_natpierce': NATPIERCE_CONFIG,
     'sign_v2ex': V2EX_CONFIG,
-    'sign_hifiki': HIFIKI_CONFIG,
-    'sign_hifiti': HIFITI_CONFIG,
+    'sign_hifini': HIFINI_CONFIG,
 }
 
 
@@ -60,36 +54,80 @@ def run_script(fun_name):
         # 获取对应的配置
         config = func_list[fun_name]
 
-        # 调用脚本的 main 函数，并传入配置
-        result = script_module.main(config)
+        if isinstance(config, list):
+            for i, conf in enumerate(config):
+                try:
+                    result = script_module.main(conf)
 
-        # 检查返回结果的格式
-        if not isinstance(result, dict) or 'success' not in result or 'title' not in result:
-            raise ValueError(f"脚本 '{fun_name}' 返回的结果格式不正确。")
+                    # 检查返回结果的格式
+                    if not isinstance(result, dict) or 'success' not in result or 'title' not in result:
+                        raise ValueError(f"脚本 '{fun_name}' 返回的结果格式不正确。")
 
-        # 打印运行结果
-        print('-----------------')
-        print(f"脚本: {result['title']}")
-        print(f"状态: {'成功' if result['success'] else '失败'}")
-        if 'message' in result:
-            print(f"消息: {result['message']}")
-        print('-----------------')
-        
-        # 根据结果进行通知
-        if not result['success']:
-            push_notification(
-                content=result.get('message', '函数运行失败，请查看日志'),
-                method=PUSH_METHOD,
-                task_name=result['title'],
-                status="failure"
-            )
+                    # 打印运行结果
+                    print('-----------------')
+                    print(f"脚本: {result['title']} (账户 {i+1})")
+                    print(f"状态: {'成功' if result['success'] else '失败'}")
+                    if 'message' in result:
+                        print(f"消息: {result['message']}")
+                    print('-----------------')
+                    
+                    # 根据结果进行通知
+                    if not result['success']:
+                        push_notification(
+                            content=result.get('message', '函数运行失败，请查看日志'),
+                            method=PUSH_METHOD,
+                            task_name=f"{result['title']} (账户 {i+1})",
+                            status="failure"
+                        )
+                    else:
+                        push_notification(
+                            content=result.get('message', '函数运行成功'),
+                            method=PUSH_METHOD,
+                            task_name=f"{result['title']} (账户 {i+1})",
+                            status="success"
+                        )
+                        
+                except Exception as e:
+                    # 捕获单个账户的异常
+                    error_message = f"脚本 '{fun_name}' 账户 {i+1} 运行异常: {e}"
+                    print(error_message)
+                    push_notification(
+                        content=error_message,
+                        method=PUSH_METHOD,
+                        task_name=f"{fun_name} (账户 {i+1})",
+                        status="failure"
+                    )
         else:
-            push_notification(
-                content=result.get('message', '函数运行成功'),
-                method=PUSH_METHOD,
-                task_name=result['title'],
-                status="success"
-            )
+            # 单个配置的情况
+            result = script_module.main(config)
+
+            # 检查返回结果的格式
+            if not isinstance(result, dict) or 'success' not in result or 'title' not in result:
+                raise ValueError(f"脚本 '{fun_name}' 返回的结果格式不正确。")
+
+            # 打印运行结果
+            print('-----------------')
+            print(f"脚本: {result['title']}")
+            print(f"状态: {'成功' if result['success'] else '失败'}")
+            if 'message' in result:
+                print(f"消息: {result['message']}")
+            print('-----------------')
+            
+            # 根据结果进行通知
+            if not result['success']:
+                push_notification(
+                    content=result.get('message', '函数运行失败，请查看日志'),
+                    method=PUSH_METHOD,
+                    task_name=result['title'],
+                    status="failure"
+                )
+            else:
+                push_notification(
+                    content=result.get('message', '函数运行成功'),
+                    method=PUSH_METHOD,
+                    task_name=result['title'],
+                    status="success"
+                )
             
     except KeyError:
         # 如果找不到对应的云函数
